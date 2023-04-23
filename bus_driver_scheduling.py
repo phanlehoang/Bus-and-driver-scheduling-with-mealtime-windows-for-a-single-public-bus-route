@@ -15,11 +15,11 @@ class BusDriverScheduling:
         self.roster = np.zeros(len(self.driver_tasks))
     def select_first_task_constr(self):
         for i in range(len(self.drivers)):
-            self.model.addConstr(sum(self.x[i,0,:]) <= 1)    
+            self.model.addConstr(sum(self.x[i,0,:]) <= 1,name = f"first_task_{i}")    
     def select_last_task_constr(self):
         for i in range(len(self.drivers)):
             self.model.addConstr(sum(self.x[i,:,
-                                        len(self.tasks)+1]) <= 1)
+                                        len(self.tasks)+1]) <= 1,name = f"last_task_{i}")
     def flow_balance_constr(self):
         for d in range(len(self.drivers)):
             for i in range(0, len(self.tasks)+2):
