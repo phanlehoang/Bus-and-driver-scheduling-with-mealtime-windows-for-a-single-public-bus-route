@@ -1,11 +1,9 @@
 import unittest
-
 from bus_driver_scheduling import BusDriverScheduling
-
 from generate_task import GenerateTask
 from gurobipy import GRB
 from driver import Driver
-
+import gurobipy as gp
 class BusDriverSchedulingTest(unittest.TestCase):
     def testHella(self):
         #tạo drivers
@@ -21,9 +19,11 @@ class BusDriverSchedulingTest(unittest.TestCase):
         busDriverScheduling.solve()
         print(busDriverScheduling.roster)
         #get var
-        #if OPtimized
+        #if optimized
+        model = gp.Model("buffalo")
+        model.optimize()
         if busDriverScheduling.model.status == GRB.OPTIMAL:
-            for v in busDriverScheduling.model.getVars():
+            for v in busDriverScheduling.model.getMVars():
                 print('%s %g' % (v.varName, v.x))
         else:
             print('No solution')
