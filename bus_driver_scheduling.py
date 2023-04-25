@@ -13,6 +13,7 @@ class BusDriverScheduling:
                                            ), vtype=GRB.BINARY,
                                     name="x")
         self.roster = np.zeros(len(self.driver_tasks))
+        self.list_entries = []
     def virtual_task_constr(self):
         for d in range(len(self.drivers)):
             self.model.addConstr(self.x[d,0,0] == 0, name = f"virtual_task_0_{d}")
@@ -52,15 +53,17 @@ class BusDriverScheduling:
             self.model.addConstr(num_tasks <= self.drivers[d].max_tasks, name = f"max_tasks_{d}")
     
     def setObjective(self):
-        list_entries = []
+        
+        ob = self.model.addVar(vtype=GRB.CONTINUOUS, name="ob")
         for d in range(len(self.drivers)):
             for i in range(1, len(self.tasks)+1):
-                for j in range(i+1, len(self.tasks)+1):
-                    if(self.tasks[j-1].time_start - self.tasks[i-1].time_end > 0):
-                            list_entries.append((self.tasks[j-1].time_start - 
+                for j in range(1, len(self.tasks)+1):
+                    if(self.tasks[j-1].time_start - self.tasks[i-1].time_end >0):
+                            self.list_entries.append((self.tasks[j-1].time_start -
                                              self.tasks[i-1].time_end)
                                             *self.x[d,i,j])
-        self.model.setObjective(sum(list_entries), GRB.MINIMIZE)
+        self.model.addConstr(gp.quicksum(self.list_entries)==ob, name = "obj")
+        self.model.setObjective(ob, GRB.MINIMIZE)
     
     def get_solution(self):
         pass 
