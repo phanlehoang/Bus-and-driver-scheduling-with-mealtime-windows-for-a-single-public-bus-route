@@ -1,6 +1,7 @@
 import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
+import timedelta
 class BusDriverScheduling:
     def __init__(self, drivers, tasks):
         self.drivers = drivers
@@ -41,7 +42,7 @@ class BusDriverScheduling:
         for d in range(len(self.drivers)):
             for i in range(1, len(self.tasks)+1):
                 for j in range(1, len(self.tasks)+1):
-                    if(self.tasks[i-1].time_end > self.tasks[j-1].time_start):
+                    if self.tasks[i-1]['time_end'] > self.tasks[j-1]['time_start']:
                         self.model.addConstr(self.x[d,i,j]==0, name = f"consecutive_task_{d}_{i}_{j}")
     def limit_tasks_each_driver(self):
         for d in range(len(self.drivers)):
@@ -58,10 +59,8 @@ class BusDriverScheduling:
         for d in range(len(self.drivers)):
             for i in range(1, len(self.tasks)+1):
                 for j in range(1, len(self.tasks)+1):
-                    if(self.tasks[j-1].time_start - self.tasks[i-1].time_end >0):
-                            self.list_entries.append((self.tasks[j-1].time_start -
-                                             self.tasks[i-1].time_end)
-                                            *self.x[d,i,j])
+                    if (self.tasks[j-1]['time_start'] - self.tasks[i-1]['time_end']).total_seconds() > 0:
+                            self.list_entries.append((self.tasks[j-1]['time_start'] - self.tasks[i-1]['time_end']).seconds*self.x[d,i,j])
         self.model.addConstr(gp.quicksum(self.list_entries)==ob, name = "obj")
         self.model.setObjective(ob, GRB.MINIMIZE)
     
