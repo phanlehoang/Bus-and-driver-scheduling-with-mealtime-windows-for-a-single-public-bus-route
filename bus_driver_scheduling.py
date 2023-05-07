@@ -1,11 +1,17 @@
 import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
-import timedelta
+import datetime
+from datetime import timedelta
 class BusDriverScheduling:
     def __init__(self, drivers, tasks):
         self.drivers = drivers
         self.tasks = tasks
+        self.max_tasks_per_driver = 3
+        self.max_time_per_driver = timedelta(minutes=480)
+        self.max_driving_time_per_driver = timedelta(minutes=360)
+        self.start_time = datetime.datetime.strptime('05:30', '%H:%M')
+        self.end_time = datetime.datetime.strptime('22:00', '%H:%M')
         self.driver_tasks = [None] + tasks + [None]
         self.model = gp.Model("bus_driver_scheduling")
         self.x = self.model.addMVar(shape=(len(drivers),
@@ -42,7 +48,7 @@ class BusDriverScheduling:
         for d in range(len(self.drivers)):
             for i in range(1, len(self.tasks)+1):
                 for j in range(1, len(self.tasks)+1):
-                    if self.tasks[i-1]['time_end'] > self.tasks[j-1]['time_start']:
+                    if self.tasks[i-1].time_end > self.tasks[j-1].time_start:
                         self.model.addConstr(self.x[d,i,j]==0, name = f"consecutive_task_{d}_{i}_{j}")
     def limit_tasks_each_driver(self):
         for d in range(len(self.drivers)):
@@ -52,26 +58,28 @@ class BusDriverScheduling:
             num_tasks = sum(list_variable)
             self.model.addConstr(num_tasks >= self.drivers[d].min_tasks, name = f"min_tasks_{d}")
             self.model.addConstr(num_tasks <= self.drivers[d].max_tasks, name = f"max_tasks_{d}")
-    
+
+
     def setObjective(self):
         
         ob = self.model.addVar(vtype=GRB.CONTINUOUS, name="ob")
         for d in range(len(self.drivers)):
             for i in range(1, len(self.tasks)+1):
                 for j in range(1, len(self.tasks)+1):
-                    if (self.tasks[j-1]['time_start'] - self.tasks[i-1]['time_end']).total_seconds() > 0:
-                            self.list_entries.append((self.tasks[j-1]['time_start'] - self.tasks[i-1]['time_end']).seconds*self.x[d,i,j])
+                    if self.tasks[j-1].time_start > self.tasks[i-1].time_end :
+                            self.list_entries.append((self.tasks[j-1].time_start - self.tasks[i-1].time_end)*self.x[d,i,j])
         self.model.addConstr(gp.quicksum(self.list_entries)==ob, name = "obj")
         self.model.setObjective(ob, GRB.MINIMIZE)
+    
     
     def get_solution(self):
         pass 
     def solve(self):
-        self.consecutive_task_constr()
-        self.select_first_task_constr()
-        self.select_last_task_constr()
+        # self.select_first_task_constr()
+        # self.select_last_task_constr()
         self.select_one_task_constr()
         self.flow_balance_constr()
+        self.consecutive_task_constr()
         self.limit_tasks_each_driver()
         self.setObjective()
         self.model.optimize()
