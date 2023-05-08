@@ -66,7 +66,7 @@ class BusDriverScheduling:
         for d in range(len(self.drivers)):
             for i in range(1, len(self.tasks)+1):
                 for j in range(1, len(self.tasks)+1):
-                    if self.tasks[j-1].time_start > self.tasks[i-1].time_end :
+                    if self.tasks[j-1].time_start >= self.tasks[i-1].time_end :
                             self.list_entries.append((self.tasks[j-1].time_start - self.tasks[i-1].time_end)*self.x[d,i,j])
         self.model.addConstr(gp.quicksum(self.list_entries)==ob, name = "obj")
         self.model.setObjective(ob, GRB.MINIMIZE)
@@ -75,8 +75,8 @@ class BusDriverScheduling:
     def get_solution(self):
         pass 
     def solve(self):
-        # self.select_first_task_constr()
-        # self.select_last_task_constr()
+        self.select_first_task_constr()
+        self.select_last_task_constr()
         self.select_one_task_constr()
         self.flow_balance_constr()
         self.consecutive_task_constr()
