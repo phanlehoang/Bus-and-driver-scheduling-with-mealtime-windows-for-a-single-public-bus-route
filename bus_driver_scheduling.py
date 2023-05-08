@@ -3,6 +3,7 @@ from gurobipy import GRB
 import numpy as np
 import datetime
 from datetime import timedelta
+from TaskChainFinder import TaskChainFinder
 class BusDriverScheduling:
     def __init__(self, drivers, tasks):
         self.drivers = drivers
@@ -59,7 +60,19 @@ class BusDriverScheduling:
             self.model.addConstr(num_tasks >= self.drivers[d].min_tasks, name = f"min_tasks_{d}")
             self.model.addConstr(num_tasks <= self.drivers[d].max_tasks, name = f"max_tasks_{d}")
 
-
+    def task_chain_constr(self):
+        #b1: tao ra task chain 
+        tcf = TaskChainFinder(self.tasks, 60)
+        task_chains = tcf.solve()
+        #b2: tao ra cac constr tren moi chain
+        for d in range (len(self.drivers)):
+            for task_chain in task_chains:
+                first_id = task_chain[0].id
+                list_variable = [self.x[d,j, int(task_chain[0].id)] 
+                                 for j in range(0, int(task_chain[0].id))]
+                list_variable += [self.x[d,int(task_chain[i-1].id), int(task_chain[i].id)]
+                                 for i in range(1, len(task_chain)) ]
+                self.model.addConstr(sum(list_variable) <= len(task_chain)-1, name = f"task_chain_{d}_{task_chain[0].id}")
     def setObjective(self):
         
         ob = self.model.addVar(vtype=GRB.CONTINUOUS, name="ob")
@@ -70,8 +83,6 @@ class BusDriverScheduling:
                             self.list_entries.append((self.tasks[j-1].time_start - self.tasks[i-1].time_end)*self.x[d,i,j])
         self.model.addConstr(gp.quicksum(self.list_entries)==ob, name = "obj")
         self.model.setObjective(ob, GRB.MINIMIZE)
-    
-    
     def get_solution(self):
         pass 
     def solve(self):
@@ -81,6 +92,7 @@ class BusDriverScheduling:
         self.flow_balance_constr()
         self.consecutive_task_constr()
         self.limit_tasks_each_driver()
+        self.task_chain_constr()
         self.setObjective()
         self.model.optimize()
         self.get_solution()
