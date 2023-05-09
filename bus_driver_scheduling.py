@@ -73,6 +73,9 @@ class BusDriverScheduling:
                 list_variable += [self.x[d,int(task_chain[i-1].id), int(task_chain[i].id)]
                                  for i in range(1, len(task_chain)) ]
                 self.model.addConstr(sum(list_variable) <= len(task_chain)-1, name = f"task_chain_{d}_{task_chain[0].id}")
+    
+    
+    
     def setObjective(self):
         
         ob = self.model.addVar(vtype=GRB.CONTINUOUS, name="ob")
@@ -92,10 +95,21 @@ class BusDriverScheduling:
         self.flow_balance_constr()
         self.consecutive_task_constr()
         self.limit_tasks_each_driver()
-        self.task_chain_constr()
+        # self.task_chain_constr()
         self.setObjective()
         self.model.optimize()
         self.get_solution()
+    def easy_solve(self):
+        self.select_first_task_constr()
+        self.select_last_task_constr()
+        self.select_one_task_constr()
+        self.flow_balance_constr()
+        self.consecutive_task_constr()
+        self.limit_tasks_each_driver()
+        # self.task_chain_constr()
+        self.model.optimize()
+        self.get_solution()
+
         
 
         
